@@ -1,5 +1,5 @@
 const {crawlPage} = require('./crawl.js');
-
+const {printReport} = require('./response.js');
 
 async function main(){
     const arguments = process.argv;
@@ -12,6 +12,7 @@ async function main(){
     }
     const pages = {};
     console.log(crawlPage(arguments[2], arguments[2], pages));
+    printReport(pages);
 }
 
 main()

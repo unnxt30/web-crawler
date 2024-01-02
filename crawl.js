@@ -1,44 +1,62 @@
 const { JSDOM } =  require('jsdom');
 async function crawlPage(baseURL, currentURL, pages) {
-    if (!currentURL.includes(baseURL)) {
+    let urlBase = new URL(baseURL);
+    let urlCurrent = new URL(currentURL);
+
+    if(!(urlBase.host == urlCurrent.host)){
         return pages;
     }
-    
-    let normalizedCurrentURL = normalizeURL(currentURL);
+
+    let normalizedCurrentURL = (normalizeURL(currentURL)); 
     if(normalizedCurrentURL in pages){
         pages[normalizedCurrentURL] += 1;
-        return pages;
-    }
-    
-    if(normalizedCurrentURL == baseURL){
-        pages[normalizedCurrentURL] = 0;
+        return pages;   
     }
     else{
-        pages[normalizedCurrentURL] = 1;
-    };
+        if(normalizedCurrentURL == baseURL){
+            pages[normalizedCurrentURL] = 0;
+        }
+        else{
+            pages[normalizedCurrentURL] = 1;
+        }
+    }
+    console.log(`crawling ${currentURL}`)
+    let htmlBody = '';
+    try{
+        const response = await fetch(currentURL);
+        if (response.status > 399){
+        console.log(`Got HTTP error, status code: ${response.status}`)
+            return pages
+        }
+        const contentType = response.headers.get('content-type')
+        if (!contentType.includes('text/html')){
+            console.log(`Got non-html response: ${contentType}`)
+            return pages
+        } 
+        htmlBody = await response.text();
+    }
+    catch(err){
+        console.log(err)
+    }
 
-    const response = fetch(currentURL);
-    const htmlBody = await response.text();
-    console.log(htmlBody);
-    const arrayURL = getURLsFromHTML(htmlBody, baseURL);
-    
-    for(const newCurrentURL of arrayURL){
-        crawlPage(baseURL, newCurrentURL, pages);
-    };
-
+    const linkArray = getURLsFromHTML(htmlBody, baseURL);
+    for(let next of linkArray){
+        pages = await crawlPage(baseURL, next, pages);
+    }
     return pages;
 }
 
 normalizeURL = (str) => {
-  const pattern = /:\/\/([^/]+\/.*)/;
-  const extracted = str.match(pattern);
-
-  const expectedString = extracted[1];
-
-  if (expectedString[expectedString.length - 1] == "/") {
-    return expectedString.slice(0, expectedString.length - 1);
-  }
-  return expectedString;
+    const url = new URL(str);
+    if(url.pathname){
+        let result = `${url.host}${url.pathname}`
+        if(result[result.length - 1] == '/'){
+           result = result.slice(0,-1);
+        }
+        return result 
+    }
+    return `${url.host}`;
+   
 };
 
 getURLsFromHTML = (htmlBody, baseURL) => {
