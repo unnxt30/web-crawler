@@ -1,16 +1,17 @@
-const argv = require('node:process'); 
+const {crawlPage} = require('./crawl.js');
 
-function main(){
+
+async function main(){
     const arguments = process.argv;
     // console.log(process.argv)
     if (arguments.length == 3){
         console.log(`The Crawler is starting at ${arguments[2]}...`)
-        return;
     }
     else{
         console.log("not the reqd amount of arguments :/");
-        return -1;
     }
+    const pages = {};
+    console.log(crawlPage(arguments[2], arguments[2], pages));
 }
 
 main()
